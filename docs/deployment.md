@@ -1,22 +1,49 @@
 # Deployment
 
-## Preferred: one Render service
+Depth is hosted at **https://depth-ah2s.onrender.com**. The React frontend and
+Python API are served by one Docker web service. The public health, live book,
+demo book, purchase, and API documentation routes were verified on September 16, 2026.
 
-The Docker image builds the React frontend and serves it with the Python API from a single origin. This avoids cross-origin configuration, a second host, and serverless snapshot inconsistency. The service must use one instance and one Uvicorn worker.
+## Updating the existing service
 
-1. First inspect the target Render workspace's billing settings. Free compute alone does **not** establish zero additional spend. Verify included usage, payment-method status, bandwidth overage behavior, and build-spend behavior. Do not add a card, upgrade, or create the service without resolving any potential charges with the owner.
-2. Connect this repository and use its `render.yaml`, which explicitly selects `plan: free` and no database/disk/add-on. Or create a Docker web service with the same settings.
-3. Check `/api/health`, `/api/book`, and a live `/api/simulate` result on the deployed URL. Confirm demo mode is visibly labeled, and use a private browser session to verify no login is required.
-4. Set the repository website only after the deployed app has been verified.
+`render.yaml` selects free compute, one instance, and `autoDeployTrigger: off`.
+A service created through the dashboard can have different auto-deploy settings;
+the YAML alone does not establish the current setting.
 
-Render free web services currently sleep after 15 minutes of inactivity and can take about a minute to wake. Shared monthly instance hours, bandwidth and build limits apply. Do not add uptime pings to evade idle suspension. No promises of permanent free service or availability are made. [Official limitations](https://render.com/docs/free).
+After pushing a tested commit, check the Render service's Events page. If no
+deployment starts, select **Manual Deploy → Deploy latest commit** on the
+existing Depth service. Keep its current instance type, instance count, and
+billing settings. Do not create a second service or enable paid add-ons.
 
-## Optional split frontend
+Verify `/api/health`, `/api/book?source=live`, and a purchase against the returned
+snapshot ID after deployment. The health response in the updated source includes
+Render's public commit SHA so it can be compared with GitHub. Check the demo
+purchase in a signed-out browser too.
 
-If the owner prefers Vercel, deploy `frontend` as a Vite static site on a verified Hobby account, with `VITE_API_URL` pointing to the single Render backend. Set `ALLOWED_ORIGINS` on the backend to the exact frontend origin. Do not enable analytics, paid add-ons, or a Pro trial. [Vercel Hobby limits](https://vercel.com/docs/plans/hobby).
+## Runtime
 
-Vercel-only independent Python functions are not supported by the in-memory snapshot-ID/cache design. A horizontally distributed implementation would need shared state, which is intentionally outside this MVP.
+The multi-stage Dockerfile builds the frontend, installs pinned Python
+dependencies, and runs Uvicorn as a non-root user. `PORT` is provided by Render;
+`/api/health` is the health-check route. Access logs are disabled by the start command.
+
+Use **one worker on one instance**. Snapshot IDs and request coalescing live in
+process memory. Independent serverless functions or multiple replicas would
+need shared snapshot storage before they could safely serve the same client.
+No database, persistent disk, scheduled job, or uptime ping is needed.
+
+## Hosting limits
+
+Render free web services sleep after 15 minutes without traffic and can take
+about a minute to resume. Instance hours, bandwidth, and build usage are shared
+within a workspace. The public app does not reveal the owner's account-specific
+billing settings; this repository makes no account-wide cost guarantee.
+See [Render's current limits](https://render.com/docs/free) before changing plans
+or provisioning another service. No billing or account settings were changed
+as part of the repository update.
 
 ## Privacy
 
-Review repository files, commit author emails, screenshots and build artifacts before publishing. The public repository exposes the chosen GitHub username and source code. No secrets or private contact information are required. The app disables access logs in the shipped server command, but the hosting provider may retain connection metadata under its own policy.
+The application has no analytics, cookies, visitor records, external fonts, or
+trading credentials. Budgets go only to this backend; Gemini receives fixed
+public market-data requests. Hosting providers may process connection metadata
+under their own policies.

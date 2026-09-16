@@ -19,10 +19,3 @@
 **What does price impact mean?** Here it is `(average fill price / best ask - 1) × 100`, for the same snapshot. It is not a prediction of future price movement or all real-world slippage.
 
 **What did the tests prove?** They check conservation of cash, liquidity bounds, rounding, invalid input, snapshot consistency, and failures. They do not prove real exchange execution, trading profitability, or production throughput.
-
-## Truthful résumé language
-
-- Built a Bitcoin purchase simulator with Python/FastAPI and React/TypeScript that walks Gemini public order-book snapshots using decimal arithmetic and visualizes fills, average execution price, and price impact.
-- Implemented shared snapshot caching, concurrent-request coalescing, failure backoff, and explicit stale/partial-depth states; verified calculation and cache invariants with automated tests.
-
-Be ready to explain the code and its assumptions. This project demonstrates exchange-market software, not blockchain development, custody, or real order execution.

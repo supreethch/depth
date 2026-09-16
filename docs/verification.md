@@ -11,6 +11,7 @@ Checked September 15–16, 2026.
 - **Privacy review:** publication sources/build output checked for secret patterns, personal email addresses, local user paths, and copied environment data. Commits use the GitHub ID-based noreply address. No analytics or remote fonts.
 - **Five automated browser tests passed in GitHub Actions**, covering reproducible fills, partial depth, fees/validation, mobile/dialog behavior, and explicit demo recovery after a live-data failure.
 - **Production Docker image built and passed smoke checks in GitHub Actions**: process health, frontend HTML, and synthetic order-book API. [Verified run](https://github.com/supreethch/depth/actions/runs/35045746744). The local Docker daemon was not running, so container verification used GitHub’s standard public-repository runner.
-- **Hosting:** no public deployment verified yet. Hosting account access and account-specific zero-cost behavior must be established first. No paid service, plan, payment method, or domain has been provisioned.
+- **Public deployment verified September 16:** https://depth-ah2s.onrender.com serves the frontend, API docs, health endpoint, and live/demo books without login. Both $10,000 purchase requests returned HTTP 200. The synthetic result was 0.13154505 BTC; live results depend on the snapshot. The original deployment was recorded by Render against commit `b8766f8`.
+- **Follow-up regression tests:** client-clock independence, clearing invalidated results, and discarding a purchase response after input changes are covered by the updated browser suite. Its CI run is linked below once complete.
 
-No measured throughput, latency, uptime, or recruiting-outcome claims are made.
+No throughput, latency, or uptime benchmarks are claimed.
