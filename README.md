@@ -55,7 +55,7 @@ npm run build --prefix frontend
 cd frontend && npx playwright install chromium && npm run test:e2e
 ```
 
-The backend tests cover single/multiple levels, exact depth, insufficient depth, fee rounding, invalid decimals, sorted/duplicate prices, randomized cash/liquidity invariants, concurrent cache misses, upstream failure, backoff, snapshot expiry, and API validation. Browser checks cover live/demo purchases, invalid input, fee changes, partial fills, the explanation dialog, and a 390px mobile layout. See [verification](docs/verification.md) for checks actually run.
+The backend tests cover single/multiple levels, exact depth, insufficient depth, fee rounding, invalid decimals, sorted/duplicate prices, randomized cash/liquidity invariants, concurrent cache misses, upstream failure, backoff, snapshot expiry, and API validation. Five automated browser tests and a production-container smoke check also pass in GitHub Actions. Interactive checks additionally covered live Gemini purchases and a 390px mobile layout. See [verification](docs/verification.md) for checks actually run.
 
 ## API
 
