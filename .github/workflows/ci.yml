@@ -1,0 +1,35 @@
+name: Verify Depth
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install -r requirements-dev.txt && pip install --no-deps -e .
+      - run: pytest -q && ruff check backend && ruff format --check backend
+      - run: npm ci --prefix frontend && npm run build --prefix frontend
+      - run: cd frontend && npx playwright install --with-deps chromium && npm run test:e2e
+      - name: Verify production container
+        run: |
+          docker build -t depth:test .
+          docker run -d --name depth-test -p 8080:8000 depth:test
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS http://127.0.0.1:8080/api/health; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/ | grep 'Depth'
+          curl -fsS http://127.0.0.1:8080/api/book?source=demo | python -c 'import sys,json; assert json.load(sys.stdin)["source"] == "demo"'

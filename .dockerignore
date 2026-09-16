@@ -1,0 +1,14 @@
+.git
+.venv
+**/node_modules
+**/dist
+**/__pycache__
+**/*.egg-info
+**/*.tsbuildinfo
+.env*
+work
+outputs
+.vercel
+.pytest_cache
+.ruff_cache
+docs

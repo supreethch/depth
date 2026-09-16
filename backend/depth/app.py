@@ -30,7 +30,11 @@ app.add_middleware(
 
 @app.middleware("http")
 async def headers(request, call_next):
-    if int(request.headers.get("content-length", "0")) > 4096:
+    try:
+        content_length = int(request.headers.get("content-length", "0"))
+    except ValueError:
+        content_length = 4097
+    if content_length > 4096:
         from fastapi.responses import JSONResponse
 
         return JSONResponse({"detail": "Request too large"}, status_code=413)
@@ -79,7 +83,7 @@ def purchase(body: Purchase):
         raise HTTPException(409, str(exc)) from exc
 
 
-web = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+web = Path(os.getenv("STATIC_DIR", "frontend/dist")).resolve()
 if web.exists():
     app.mount("/assets", StaticFiles(directory=web / "assets"), name="assets")
 

@@ -80,14 +80,8 @@ def fetch_book():
 
 def make_demo():
     # Synthetic, deterministic teaching fixture. Never represented as exchange data.
-    asks = tuple(
-        Level(D(76000 + i * 12), D(str(0.02 + (i % 7) * 0.015)).quantize(D("0.00000001")))
-        for i in range(40)
-    )
-    bids = tuple(
-        Level(D(75992 - i * 12), D(str(0.025 + (i % 5) * 0.018)).quantize(D("0.00000001")))
-        for i in range(40)
-    )
+    asks = tuple(Level(D(76000 + i * 12), (D("0.02") + (i % 7) * D("0.015"))) for i in range(40))
+    bids = tuple(Level(D(75992 - i * 12), (D("0.025") + (i % 5) * D("0.018"))) for i in range(40))
     return Snapshot("demo-v1", "demo", None, 0, bids, asks)
 
 

@@ -34,6 +34,8 @@ def parse_budget(value: str) -> Decimal:
 
 def normalize_book(raw: dict) -> tuple[tuple[Level, ...], tuple[Level, ...]]:
     """Reject malformed data; aggregate equal prices and sort defensively."""
+    if not isinstance(raw, dict):
+        raise ValueError("Order book must be an object")
     sides = []
     for name in ("bids", "asks"):
         rows = raw.get(name)

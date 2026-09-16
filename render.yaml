@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: depth
+    runtime: docker
+    plan: free
+    numInstances: 1
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: PORT
+        value: 8000
