@@ -30,8 +30,10 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [learn, setLearn] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(performance.now());
   const epoch = useRef(0);
+  const inputRevision = useRef(0);
+  const receivedAt = useRef(performance.now());
   const dialog = useRef<HTMLDialogElement>(null);
 
   async function refresh() {
@@ -41,7 +43,11 @@ export default function App() {
     setResult(null);
     try {
       const next = await request<Book>(`/api/book?source=${source}`);
-      if (current === epoch.current) setBook(next);
+      if (current === epoch.current) {
+        receivedAt.current = performance.now();
+        setNow(receivedAt.current);
+        setBook(next);
+      }
     } catch (e) {
       if (current === epoch.current) {
         setError((e as Error).message);
@@ -60,27 +66,32 @@ export default function App() {
     };
   }, [source]); // explicit snapshot refresh preserves reproducibility
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => setNow(performance.now()), 1000);
     return () => clearInterval(id);
   }, []);
   useEffect(() => {
     if (learn) dialog.current?.showModal();
     else dialog.current?.close();
   }, [learn]);
-  const age = book?.fetched_at
-    ? Math.max(0, Math.floor((now - Date.parse(book.fetched_at)) / 1000))
-    : 0;
-  const expired = source === "live" && age > 120;
+  // Server age + elapsed browser time avoids depending on the visitor's clock.
+  const age =
+    book?.source === "live"
+      ? Math.max(
+          0,
+          Math.floor(
+            (book.age_seconds ?? 0) + (now - receivedAt.current) / 1000,
+          ),
+        )
+      : 0;
+  const expired = source === "live" && age > (book?.max_age_seconds ?? 120);
   const stale = book?.status === "stale" || (source === "live" && age >= 10);
-  const dirty =
-    !!result &&
-    (result.budget !== Number(budget).toFixed(2) ||
-      result.fee_bps !== Number(fee));
-  const visibleResult = dirty ? null : result;
+  const visibleResult = result;
   async function run(e: React.FormEvent) {
     e.preventDefault();
     if (!book) return;
     const current = epoch.current;
+    const revision = inputRevision.current;
+    setResult(null);
     setBusy(true);
     setError("");
     try {
@@ -93,7 +104,8 @@ export default function App() {
           snapshot_id: book.id,
         }),
       });
-      if (current === epoch.current) setResult(next);
+      if (current === epoch.current && revision === inputRevision.current)
+        setResult(next);
     } catch (e) {
       if (current === epoch.current) setError((e as Error).message);
     } finally {
@@ -101,6 +113,8 @@ export default function App() {
     }
   }
   function changeBudget(value: string) {
+    inputRevision.current++;
+    setResult(null);
     setBudget(value);
     setError("");
   }
@@ -226,7 +240,7 @@ export default function App() {
                 <span className="pill">CUMULATIVE</span>
               </div>
               {book ? (
-                <DepthChart book={book} result={visibleResult} />
+                <DepthChart key={book.id} book={book} result={visibleResult} />
               ) : (
                 <div className="empty-chart">
                   <Waves size={38} />
@@ -371,7 +385,12 @@ export default function App() {
                     <select
                       id="fee"
                       value={fee}
-                      onChange={(e) => setFee(e.target.value)}
+                      onChange={(e) => {
+                        inputRevision.current++;
+                        setResult(null);
+                        setError("");
+                        setFee(e.target.value);
+                      }}
                     >
                       <option value="0">0% · excluded</option>
                       <option value="10">0.10% · example</option>
@@ -499,15 +518,10 @@ export default function App() {
                 ) : (
                   <div className="result-empty">
                     <Layers3 size={26} />
-                    <h4>
-                      {dirty
-                        ? "Ready for another look?"
-                        : "Every purchase tells a story."}
-                    </h4>
+                    <h4>Every purchase tells a story.</h4>
                     <p>
-                      {dirty
-                        ? "Simulate your updated budget to see its path through the book."
-                        : "Run a simulation to see your bitcoin amount, average price, and market impact."}
+                      Run a simulation to see your bitcoin amount, average
+                      price, and market impact.
                     </p>
                   </div>
                 )}

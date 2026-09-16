@@ -86,3 +86,67 @@ test("live failure never silently substitutes synthetic prices", async ({
   await page.getByRole("button", { name: "Explore demo" }).click();
   await expect(page.locator(".notice.demo")).toContainText("synthetic");
 });
+
+test("editing to an invalid equivalent amount clears the old result", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: "Simulate purchase", exact: true })
+    .click();
+  await expect(page.locator(".quantity")).toBeVisible();
+  await page.getByLabel("How much would you spend?").fill("1e4");
+  await expect(page.locator(".quantity")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Simulate purchase", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.locator(".quantity")).toHaveCount(0);
+});
+
+test("fresh server snapshots remain usable with a different client clock", async ({
+  page,
+  request,
+}) => {
+  const fixture = await (
+    await request.get("http://127.0.0.1:8000/api/book?source=demo")
+  ).json();
+  await page.route("**/api/book?source=live", (route) =>
+    route.fulfill({
+      json: {
+        ...fixture,
+        source: "live",
+        status: "live",
+        age_seconds: 3,
+        fetched_at: "2000-01-01T00:00:00Z",
+      },
+    }),
+  );
+  await page.getByRole("button", { name: "Live market", exact: true }).click();
+  await expect(page.locator(".snapshot-bar")).toContainText("Live snapshot");
+  await expect(
+    page.getByRole("button", { name: "Simulate purchase", exact: true }),
+  ).toBeEnabled();
+});
+
+test("editing during a purchase discards the old response", async ({
+  page,
+}) => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/simulate", async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await page
+    .getByRole("button", { name: "Simulate purchase", exact: true })
+    .click();
+  await page.getByLabel("How much would you spend?").fill("10001");
+  await page.getByLabel("How much would you spend?").fill("10000");
+  release();
+  await expect(
+    page.getByRole("button", { name: "Simulate purchase", exact: true }),
+  ).toBeEnabled();
+  await expect(page.locator(".quantity")).toHaveCount(0);
+});

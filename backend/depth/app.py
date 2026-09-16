@@ -49,7 +49,7 @@ async def headers(request, call_next):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok", "version": "1.0.0", "commit": os.getenv("RENDER_GIT_COMMIT", "local")}
 
 
 @app.get("/api/book")
